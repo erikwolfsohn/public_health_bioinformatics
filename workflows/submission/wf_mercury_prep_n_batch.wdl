@@ -58,6 +58,7 @@ workflow mercury_prep_n_batch {
     File? genbank_fasta = trim_genbank_fastas.genbank_fasta
     File? bankit_sqn_to_email = table2asn.sqn_file
     File gisaid_metadata = sm_metadata_wrangling.gisaid_metadata
+    File gisaid_cli4_metadata = sm_metadata_wrangling.gisaid_cli4_metadata
     File gisaid_fasta = sm_metadata_wrangling.gisaid_fasta
     String mercury_prep_n_batch_analysis_date = version_capture.date
     String mercury_prep_n_batch_version = version_capture.phb_version

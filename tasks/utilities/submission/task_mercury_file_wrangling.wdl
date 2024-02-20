@@ -25,10 +25,10 @@ task sm_metadata_wrangling { # the sm stands for supermassive
   }
   command <<<
     # when running on terra, comment out all input_table mentions
-    python3 /scripts/export_large_tsv/export_large_tsv.py --project "~{project_name}" --workspace "~{workspace_name}" --entity_type ~{table_name} --tsv_filename ~{table_name}-data.tsv
+    # python3 /scripts/export_large_tsv/export_large_tsv.py --project "~{project_name}" --workspace "~{workspace_name}" --entity_type ~{table_name} --tsv_filename ~{table_name}-data.tsv
     
     # when running locally, use the input_table in place of downloading from Terra
-    #cp -v ~{input_table} ~{table_name}-data.tsv
+    cp -v ~{input_table} ~{table_name}-data.tsv
 
     # transform boolean skip_county into string for python comparison
     if ~{skip_county}; then
@@ -190,7 +190,7 @@ task sm_metadata_wrangling { # the sm stands for supermassive
         genbank_required = []
       
       gisaid_required = ["gisaid_submitter", "submission_id", "collection_date", "continent", "country", "state", "host", "seq_platform", assembly_fasta_column_name, "assembly_method", assembly_mean_coverage_column_name, "collecting_lab", "collecting_lab_address", "submitting_lab", "submitting_lab_address", "authors"]
-      gisaid_optional = ["gisaid_virus_name", "additional_host_information", "county", "purpose_of_sequencing", "patient_gender", "patient_age", "patient_status", "specimen_source", "outbreak", "last_vaccinated", "treatment", "consortium"]
+      gisaid_optional = ["gisaid_virus_name", "additional_host_information", "county", "purpose_of_sequencing", "patient_gender", "patient_age", "patient_status", "specimen_source", "outbreak", "last_vaccinated", "treatment", "consortium", "comment", "comment_type", "add_location"]
 
       required_metadata = biosample_required + sra_required + genbank_required + gisaid_required
      
@@ -330,13 +330,19 @@ task sm_metadata_wrangling { # the sm stands for supermassive
       gisaid_metadata.to_csv("gisaid-fasta-manipulation.sh", header=False, index=False, columns = ["rename_fasta_header"])
       gisaid_metadata.drop("rename_fasta_header", axis=1, inplace=True)
 
+      # additional output for cli4 submission
+      gisaid_cli4_metadata = gisaid_metadata.copy()
+      gisaid_rename_headers = {"seq_platform" : "seq_technology", assembly_mean_coverage_column_name : "coverage", "collecting_lab" : "orig_lab", "collecting_lab_address" : "orig_lab_addr", "submitting_lab" : "subm_lab", "submitting_lab_address" : "subm_lab_addr", "purpose_of_sequencing" : "sampling_strategy", "patient_gender" : "gender", "specimen_source" : "specimen", "additional_host_information" : "add_host_info", "gisaid_submitter" : "submitter", "gisaid_virus_name" : "virus_name", "covv_type" : "type", "covv_passage" : "passage", "covv_subm_sample_id" : "subm_sample_id", "covv_provider_sample_id" : "provider_sample_id", "covv_add_location" : "add_location"}
+      gisaid_cli4_metadata.rename(columns=gisaid_rename_headers, inplace=True)
+      gisaid_metadata.drop("fn", axis=1, inplace=True)
+      gisaid_cli4_metadata.to_csv("~{output_name}_gisaid_cli4_metadata.csv", sep=',', index=False)
+
       # make dictionary for renaming headers
       # format: {original : new} or {metadata_formatter : gisaid_format}
       gisaid_rename_headers = {"gisaid_virus_name" : "covv_virus_name", "additional_host_information" : "covv_add_host_info", "gisaid_submitter" : "submitter", "collection_date" : "covv_collection_date", "seq_platform" : "covv_seq_technology", "host" : "covv_host", "assembly_method" : "covv_assembly_method", assembly_mean_coverage_column_name : "covv_coverage", "collecting_lab" : "covv_orig_lab", "collecting_lab_address" : "covv_orig_lab_addr", "submitting_lab" : "covv_subm_lab", "submitting_lab_address" : "covv_subm_lab_addr", "authors" : "covv_authors", "purpose_of_sequencing" : "covv_sampling_strategy", "patient_gender" : "covv_gender", "patient_age" : "covv_patient_age", "patient_status" : "covv_patient_status", "specimen_source" : "covv_specimen", "outbreak" : "covv_outbreak", "last_vaccinated" : "covv_last_vaccinated", "treatment" : "covv_treatment", "consortium" : "covv_consortium"}
       
       # rename columns
       gisaid_metadata.rename(columns=gisaid_rename_headers, inplace=True)
-
       gisaid_metadata.to_csv("~{output_name}_gisaid_metadata.csv", sep=',', index=False)
 
     elif ("~{organism}" == "mpox"):
@@ -557,6 +563,7 @@ task sm_metadata_wrangling { # the sm stands for supermassive
     File? bankit_metadata = "~{output_name}.src"
     File? bankit_fasta = "~{output_name}.fsa"
     File gisaid_metadata = "~{output_name}_gisaid_metadata.csv"
+    File gisaid_cli4_metadata = "~{output_name}_gisaid_cli4_metadata.csv"
     File gisaid_fasta = "~{output_name}_gisaid.fasta"
   }
   runtime {
