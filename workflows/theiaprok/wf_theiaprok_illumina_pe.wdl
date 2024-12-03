@@ -589,7 +589,7 @@ workflow theiaprok_illumina_pe {
     String? trimmomatic_version = read_QC_trim.trimmomatic_version
     # Read QC - fastp outputs
     String? fastp_version = read_QC_trim.fastp_version
-	File? fastp_html = read_QC_trim.fastp_stats
+	File? fastp_html = read_QC_trim.fastp_html
 	File? fastp_json = read_QC_trim.fastp_json
     # Read QC - bbduk outputs
     File? read1_clean = read_QC_trim.read1_clean
